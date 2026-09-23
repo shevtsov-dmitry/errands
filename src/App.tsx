@@ -1,34 +1,80 @@
 import { useState, useEffect } from 'react';
-import { MantineProvider, Container, TextInput, ActionIcon, Stack, Paper, Text, Group, Modal, Button, createTheme } from '@mantine/core';
+import {
+  MantineProvider,
+  Container,
+  TextInput,
+  ActionIcon,
+  Stack,
+  Paper,
+  Text,
+  Group,
+  Modal,
+  Button,
+  createTheme,
+  Box
+} from '@mantine/core';
 import { IconPlus, IconGripVertical, IconCheck } from '@tabler/icons-react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import '@mantine/core/styles.css';
 
-// Nord Theme Customization
+// Custom Nord Theme with darker background shades
 const nordTheme = createTheme({
   primaryColor: 'cyan',
   colors: {
-    cyan: ['#E5E9F0', '#D8DEE9', '#E5E9F0', '#8FBCBB', '#88C0D0', '#81A1C1', '#5E81AC', '#4C566A', '#434C5E', '#3B4252'],
-    dark: ['#ECEFF4', '#E5E9F0', '#D8DEE9', '#4C566A', '#434C5E', '#3B4252', '#2E3440', '#2E3440', '#2E3440', '#2E3440'],
+    cyan: [
+      '#E5E9F0', '#D8DEE9', '#E5E9F0', '#8FBCBB', '#88C0D0',
+      '#81A1C1', '#5E81AC', '#4C566A', '#434C5E', '#3B4252'
+    ],
+    // Custom dark shade scale: dark.9 is the overall app background (#1E222A)
+    dark: [
+      '#ECEFF4', '#E5E9F0', '#D8DEE9', '#4C566A', '#434C5E',
+      '#3B4252', '#2E3440', '#2B303A', '#242933', '#1E222A'
+    ],
   },
   fontFamily: 'Inter, sans-serif',
 });
 
-interface Errand { id: string; text: string; position: number; }
+interface Errand {
+  id: string;
+  text: string;
+  position: number;
+}
 
 function SortableItem({ id, text, onComplete }: { id: string, text: string, onComplete: (id: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
+const style = {
+    // Modify CSS.Transform to reset X offset to 0
+    transform: transform ? CSS.Transform.toString({ ...transform, x: 0 }) : undefined,
     transition,
     touchAction: 'none',
   };
 
   return (
-    <Paper ref={setNodeRef} style={style} shadow="sm" p="md" radius="md" withBorder>
+    <Paper
+      ref={setNodeRef}
+      style={style}
+      shadow="md"
+      p="md"
+      radius="md"
+      withBorder
+      bg="var(--mantine-color-body)"
+    >
       <Group justify="space-between" wrap="nowrap">
         <Group wrap="nowrap" style={{ flex: 1 }}>
           <ActionIcon variant="subtle" color="gray" {...attributes} {...listeners} style={{ cursor: 'grab' }}>
@@ -72,7 +118,7 @@ export default function App() {
 
   const handleDragEnd = async (event: any) => {
     const { active, over } = event;
-    if (active.id !== over.id) {
+    if (active && over && active.id !== over.id) {
       const oldIndex = errands.findIndex(e => e.id === active.id);
       const newIndex = errands.findIndex(e => e.id === over.id);
       const newOrder = arrayMove(errands, oldIndex, newIndex).map((e, i) => ({ ...e, position: i }));
@@ -95,48 +141,58 @@ export default function App() {
 
   return (
     <MantineProvider theme={nordTheme} defaultColorScheme="auto">
-      {/* Container is narrow on desktop (size="sm"), fullscreen on mobile (px={0} when small) */}
-      <Container size="sm" p={{ base: 0, sm: 'md' }} style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* Wrapper Box applies the darker background across the viewport */}
+      <Box
+        bg="var(--mantine-color-dark-9)"
+        style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center' }}
+      >
+        {/* Fullscreen on mobile, narrow container centered on desktop */}
+        <Container
+          size="sm"
+          p={{ base: 0, sm: 'md' }}
+          style={{ height: '100vh', width: '100%', display: 'flex', flexDirection: 'column' }}
+        >
 
-        {/* Top Input Row */}
-        <Paper p="md" radius={0} shadow="xs" style={{ zIndex: 10 }}>
-          <TextInput
-            placeholder="Add new errand..."
-            size="lg"
-            value={input}
-            onChange={(e) => setInput(e.currentTarget.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addErrand()}
-            rightSection={
-              <ActionIcon size={32} radius="xl" color="cyan" variant="filled" onClick={addErrand}>
-                <IconPlus size={18} />
-              </ActionIcon>
-            }
-          />
-        </Paper>
+          {/* Top Input Row */}
+          <Paper p="md" radius={6} shadow="sm" style={{ zIndex: 10 }} bg="var(--mantine-color-body)">
+            <TextInput
+              placeholder="Add new errand..."
+              size="lg"
+              value={input}
+              onChange={(e) => setInput(e.currentTarget.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addErrand()}
+              rightSection={
+                <ActionIcon size={32} radius="xl" color="cyan" variant="filled" onClick={addErrand}>
+                  <IconPlus size={18} />
+                </ActionIcon>
+              }
+            />
+          </Paper>
 
-        {/* Scrollable List */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={errands} strategy={verticalListSortingStrategy}>
-              <Stack gap="md">
-                {errands.map(errand => (
-                  <SortableItem key={errand.id} id={errand.id} text={errand.text} onComplete={setConfirmModal} />
-                ))}
-              </Stack>
-            </SortableContext>
-          </DndContext>
-        </div>
+          {/* Infinite Scrollable List */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={errands} strategy={verticalListSortingStrategy}>
+                <Stack gap="md">
+                  {errands.map(errand => (
+                    <SortableItem key={errand.id} id={errand.id} text={errand.text} onComplete={setConfirmModal} />
+                  ))}
+                </Stack>
+              </SortableContext>
+            </DndContext>
+          </div>
 
-        {/* Confirmation Modal */}
-        <Modal opened={!!confirmModal} onClose={() => setConfirmModal(null)} title="Confirm Completion" centered>
-          <Text mb="lg">Are you sure you completed this errand?</Text>
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setConfirmModal(null)}>Cancel</Button>
-            <Button color="teal" onClick={completeErrand}>Complete</Button>
-          </Group>
-        </Modal>
+          {/* Confirmation Modal */}
+          <Modal opened={!!confirmModal} onClose={() => setConfirmModal(null)} title="Confirm Completion" centered>
+            <Text mb="lg">Are you sure you completed this errand?</Text>
+            <Group justify="flex-end">
+              <Button variant="default" onClick={() => setConfirmModal(null)}>Cancel</Button>
+              <Button color="teal" onClick={completeErrand}>Complete</Button>
+            </Group>
+          </Modal>
 
-      </Container>
+        </Container>
+      </Box>
     </MantineProvider>
   );
 }
