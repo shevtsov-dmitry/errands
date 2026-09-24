@@ -4,9 +4,9 @@
   "type": "module",
   "scripts": {
     "dev:frontend": "vite",
-    "dev:backend": "node --watch server.js",
+    "dev:backend": "node --watch src/server.js",
     "build": "tsc && vite build",
-    "start": "node server.js"
+    "start": "node src/server.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",

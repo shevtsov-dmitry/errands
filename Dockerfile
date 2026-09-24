@@ -1,24 +1,39 @@
-# Stage 1: Build the Vite frontend
-FROM node:20-alpine AS builder
+# Build frontend
+FROM node:22-alpine AS builder
+
 WORKDIR /app
+
 COPY package*.json ./
-RUN npm install
+
+RUN apk add --no-cache python3 make g++
+
+RUN npm ci
+
 COPY . .
+
 RUN npm run build
 
-# Stage 2: Production Server
-FROM node:20-alpine
+
+# Production server
+FROM node:22-alpine
+
 WORKDIR /app
+
+RUN apk add --no-cache python3 make g++
+
 COPY package*.json ./
-# Install only production dependencies
-RUN npm install --production
+
+RUN npm ci --omit=dev
+
+COPY src/server.js ./src/server.js
 COPY --from=builder /app/dist ./dist
-COPY server.js ./
 
-# SQLite DB persists here (mount a volume to /app/data in production)
+RUN mkdir -p /app/data
+
+ENV NODE_ENV=production
 ENV PORT=3000
+ENV DB_PATH=/app/data/errands.db
 
-# Traefik Labels (Ensure these match your docker-compose or Swarm setup)
 LABEL traefik.enable="true"
 LABEL traefik.http.routers.errands.rule="Host(`errands.shevts.ru`)"
 LABEL traefik.http.routers.errands.entrypoints="websecure"
@@ -26,4 +41,5 @@ LABEL traefik.http.routers.errands.tls.certresolver="myresolver"
 LABEL traefik.http.services.errands.loadbalancer.server.port="3000"
 
 EXPOSE 3000
-CMD ["node", "server.js"]
+
+CMD ["node", "src/server.js"]
