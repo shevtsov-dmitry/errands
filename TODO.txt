@@ -1,0 +1,4 @@
+- expand text input if text is more than required. for example now it always has one row. add up to 4 rows when a lot of text. this ussually happens in mobile.
+- fix scroll issue. there is no scroll in mobile.
+- fix light mode color scheme for the app.
+- make icon to modify existing errand and update value in database with put method.
